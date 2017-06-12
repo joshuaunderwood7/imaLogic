@@ -14,7 +14,7 @@ def IMGL(X):   return complex(X.real, abs(X.imag))
 #  implementations
 
 def NOT(X):    return X**2 * t
-def AND(X, Y): return IMGL(X * Y * t).conjugate() * t
+def AND(X, Y): return NOT(IMGL(X * Y * t))
 def OR(X,Y):   return NOT(AND(NOT(X), NOT(Y)))
 
 def NAND(X,Y): return NOT(AND(X,Y))
