@@ -24,6 +24,8 @@ def REFINE(Z, tol=1e-3):
     elif abs(Z - f) < tol: return f
     elif abs(Z - u) < tol: return u
 
+def RIML(X):   return REFINE(IMGL(X))
+
 def IMGB(X):
     """
     IMGB converts true/false imaginary numbers into real numbers
@@ -260,6 +262,44 @@ if __name__=="__main__":
     print "IMGB(t) = {}".format(IMGB(t))
     print "IMGB(f) = {}".format(IMGB(f))
 
+    for a in [f,t]: 
+     for b in [f,t]: 
+      for c in [f,t]:
+        print
+        x = IMGL(a*b*t)**2
+        y = IMGL(a*c*t)**2
+        z = IMGL(a * IMGL(b*c) * t)**2
+        print "T ?= IMGL(xyU)/z = {}\twhere a={}, b={}, c={}, x={}, y={}, z={}".format(
+                IMGL(x*y*u)/z, dispU(a), dispU(b), dispU(c), x, y, z)
+        #print "OR(AND(a,b),AND(a,c)) = {}".format(dispU(OR(AND(a,b),AND(a,c))))
+        #print "AND(a, OR(b,c)) = {}".format(dispU(AND(a, OR(b,c))))
+        #print
+        #print "OR(AND(a,b),AND(a,c)) = {}".format(dispU(OR(AND(a,b),AND(a,c))))
+        #print "IMGL(AND(a,b) * AND(a,c)) = {}".format(dispU(IMGL(AND(a,b) * AND(a,c))))
+        #print "IMGL(NOT(IMGL(a*b*t)) * AND(a,c)) = {}".format(dispU( IMGL(NOT(IMGL(a*b*t)) * AND(a,c)) ))
+        #print "IMGL(NOT(IMGL(a*b*t)) * NOT(IMGL(a*c*t))) = {}".format(dispU( IMGL(NOT(IMGL(a*b*t)) * NOT(IMGL(a*c*t))) ))
+        #print "IMGL((IMGL(a*b*t)**2 * t) * (IMGL(a*c*t)**2 * t)) = {}".format(dispU( IMGL((IMGL(a*b*t)**2 * t) * (IMGL(a*c*t)**2 * t)) ))
+        #print "IMGL(IMGL(a*b*t)**2 * IMGL(a*c*t)**2 * u) = {}".format(dispU( IMGL((IMGL(a*b*t)**2 * t) * (IMGL(a*c*t)**2 * t)) ))
+        #print
+        #print "AND(a, OR(b,c)) = {}".format(dispU(AND(a, OR(b,c))))
+        #print "AND(a, IMGL(b*c)) = {}".format(dispU( AND(a, IMGL(b*c)) ))
+        #print "NOT(IMGL(a * IMGL(b*c) * t)) = {}".format(dispU( NOT(IMGL(a * IMGL(b*c) * t)) ))
+        #print "(IMGL(a * IMGL(b*c) * t))**2 * t = {}".format(dispU( (IMGL(a * IMGL(b*c) * t))**2 * t ))
+        #print
+        print "IMGL(IMGL(a*b*t)**2 * IMGL(a*c*t)**2 * u) / (IMGL(a * IMGL(b*c) * t))**2 ?= t {}".format(dispU( IMGL(IMGL(a*b*t)**2 * IMGL(a*c*t)**2 * u) / (IMGL(a * IMGL(b*c) * t))**2 ))
+        ##print "IMGL(IMGL(a*t*IMGL(b*c))**2 * u) / (IMGL(a * IMGL(b*c) * t))**2 ?= t {}".format(dispU( IMGL(IMGL(a*t*IMGL(b*c))**2 * u) / (IMGL(a * IMGL(b*c) * t))**2 ))
+        #print
+        #print "IMGL(a*t) == IMGL(IMGL(a)*t) ? {}".format( IMGL(a*t) == IMGL(IMGL(a)*t) )
+        #print "IMGL(a*u) == IMGL(IMGL(a)*u) ? {}".format( IMGL(a*u) == IMGL(IMGL(a)*u) )
+        #print "IMGL(a*f) == IMGL(IMGL(a)*f) ? {}".format( IMGL(a*f) == IMGL(IMGL(a)*f) )
+        print
+        ##print "IMGL(a*b*t) == IMGL(IMGL(a*b)*t) ? {}".format( RIML(a*b*t) == RIML( RIML(a*b)*t) )
+        ##print "IMGL(a*b*u) == IMGL(IMGL(a*b)*u) ? {}".format( RIML(a*b*u) == RIML( RIML(a*b)*u) )
+        ##print "IMGL(a*b*f) == IMGL(IMGL(a*b)*f) ? {}".format( RIML(a*b*f) == RIML( RIML(a*b)*f) )
+        # print "IMGL(a*b*t) == IMGL(IMGL(a*b)*t) ? {}".format( IMGL(a*b*t)**2 == IMGL(IMGL(a*b)**2 *t) )
+        print "IMGL(IMGL(a*b*t)**2 * IMGL(a*b*t)**2 * u) / (IMGL(a * IMGL(a*b) * t))**2 == t {}".format(REFINE( IMGL(IMGL(a*b*t)**2 * IMGL(a*b*t)**2 * u) / (IMGL(a * IMGL(a*b) * t))**2 ) == t )
+        # print "IMGL(IMGL(a*b*t)**2 * IMGL(a*c*t)**2 * u) / (IMGL(a * IMGL(b*c) * t))**2 == t {}".format(dispU( IMGL(IMGL(a*b*t)**2 * IMGL(a*c*t)**2 * u) / (IMGL(a * IMGL(b*c) * t))**2 ))
+        # print "IMGL(IMGL(a*b*t)**2 * IMGL(a*c*t)**2 * u) / (IMGL(a * IMGL(b*c) * t)**2 * t) == f {}".format( RIML(IMGL(a*b*t)**2 * IMGL(a*c*t)**2 * u) / REFINE(IMGL(a * IMGL(b*c) * t)**2 * t) == f )
 
 """
 
