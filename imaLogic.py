@@ -2,7 +2,6 @@ from __future__ import division
 import math
 import cmath
 
-
 #-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 #  Definitions
 
@@ -24,6 +23,14 @@ def REFINE(Z, tol=1e-3):
     if   abs(Z - t) < tol: return t
     elif abs(Z - f) < tol: return f
     elif abs(Z - u) < tol: return u
+
+def IMGB(X):
+    """
+    IMGB converts true/false imaginary numbers into real numbers
+    B(t) = 1 + 0i
+    B(f) = 0 + 0i
+    """
+    return (-2 * (X - 1)) / complex(3, -math.sqrt(3))
 
 #-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 #  implementations
@@ -249,6 +256,11 @@ if __name__=="__main__":
     S = add8Bit(f,f,t,f, t,f,t,f,  f,f,f,f, t,t,f,t)
     print map(disp, S)
     print binary_convert(list(S))
+
+    print "IMGB(t) = {}".format(IMGB(t))
+    print "IMGB(f) = {}".format(IMGB(f))
+
+
 """
 
 OR( AND(NOT(A), B), AND(A, B) )
