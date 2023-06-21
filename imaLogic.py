@@ -37,14 +37,27 @@ def IMGB(X):
 #-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 #  implementations
 
-def NOT(X):    return X**2 * t
-def AND(X, Y): return NOT(IMGL(X * Y * t))
-def OR(X,Y):   return NOT(AND(NOT(X), NOT(Y)))
+def UNK(X):     return X**2 * f
+def NOT(X):     return X**2 * t
+def IF(X):      return X**2 * u
 
-def NAND(X,Y): return NOT(AND(X,Y))
-def NOR(X,Y):  return NOT(OR(X,Y))
+def OR(X,Y):    return IMGL(X * Y)# * f)
+def NOR(X,Y):   return NOT(OR(X,Y))
+    
+def NAND(X,Y):  return IMGL(X * Y * t)
+def AND(X, Y):  return NOT(NAND(X,Y))
+                                                                                                                                                                            
+def XNOR(X,Y):  return IMGL(X * Y * u)
+def XOR(X,Y):   return NOT(XNOR(X,Y))
 
-def XOR(X,Y):  return NOT(IMGL(X * Y * u))
+#-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+#  Decimal integer equality
+                                                                                                                                                                            
+def CMP(A : int, B : int, depth=0):
+    """ returns "true" if A == B """                                                                                                                                                                                                                                                                         
+    if  A==0 and B==0: return t
+    else:
+        return REFINE(AND( REFINE(XNOR( DENM(A%2), DENM(B%2) )), CMP(A//2, B//2, depth+1) ))
 
 #-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 #  circuit
