@@ -25,6 +25,8 @@ def REFINE(Z, tol=1e-3):
     elif abs(Z - u) < tol: return u
 
 def RIML(X):   return REFINE(IMGL(X))
+def RNRM(X):   return REFINE(NORM(X))
+def RDEN(X):   return REFINE(DENM(X))
 
 def IMGB(X):
     """
@@ -54,10 +56,159 @@ def XOR(X,Y):   return NOT(XNOR(X,Y))
 #  Decimal integer equality
                                                                                                                                                                             
 def CMP(A : int, B : int, depth=0):
-    """ returns "true" if A == B """                                                                                                                                                                                                                                                                         
+    """
+    returns "true" if A == B
+
+    This function cheats by using an if-statement/piece-wise function. 
+    So, don't use this one for actual imaLogic proof
+    """                                                                                                                                                                                                                                                                          
     if  A==0 and B==0: return t
     else:
         return REFINE(AND( REFINE(XNOR( DENM(A%2), DENM(B%2) )), CMP(A//2, B//2, depth+1) ))
+
+def CMP16(A : int, B : int):
+    Ab = [ DENM( (A // 2**0 ) % 2 )
+         , DENM( (A // 2**1 ) % 2 )
+         , DENM( (A // 2**2 ) % 2 )
+         , DENM( (A // 2**3 ) % 2 )
+         , DENM( (A // 2**4 ) % 2 )
+         , DENM( (A // 2**5 ) % 2 )
+         , DENM( (A // 2**6 ) % 2 )
+         , DENM( (A // 2**7 ) % 2 )
+         , DENM( (A // 2**8 ) % 2 )
+         , DENM( (A // 2**9 ) % 2 )
+         , DENM( (A // 2**10) % 2 )
+         , DENM( (A // 2**11) % 2 )
+         , DENM( (A // 2**12) % 2 )
+         , DENM( (A // 2**13) % 2 )
+         , DENM( (A // 2**14) % 2 )
+         , DENM( (A // 2**15) % 2 )
+         ]
+    Bb = [ DENM( (B // 2**0 ) % 2 )
+         , DENM( (B // 2**1 ) % 2 )
+         , DENM( (B // 2**2 ) % 2 )
+         , DENM( (B // 2**3 ) % 2 )
+         , DENM( (B // 2**4 ) % 2 )
+         , DENM( (B // 2**5 ) % 2 )
+         , DENM( (B // 2**6 ) % 2 )
+         , DENM( (B // 2**7 ) % 2 )
+         , DENM( (B // 2**8 ) % 2 )
+         , DENM( (B // 2**9 ) % 2 )
+         , DENM( (B // 2**10) % 2 )
+         , DENM( (B // 2**11) % 2 )
+         , DENM( (B // 2**12) % 2 )
+         , DENM( (B // 2**13) % 2 )
+         , DENM( (B // 2**14) % 2 )
+         , DENM( (B // 2**15) % 2 )
+         ]
+    return ANDR( AND( AND( ANDR( XNOR(Ab[ 0], Bb[ 0]), XNOR(Ab[ 1], Bb[ 1]) )
+                         , ANDR( XNOR(Ab[ 2], Bb[ 2]), XNOR(Ab[ 3], Bb[ 3]) ) 
+                         )
+                    , AND( ANDR( XNOR(Ab[ 4], Bb[ 4]), XNOR(Ab[ 5], Bb[ 5]) )
+                         , ANDR( XNOR(Ab[ 6], Bb[ 6]), XNOR(Ab[ 7], Bb[ 7]) ) 
+                    )    )
+               , AND( AND( ANDR( XNOR(Ab[ 8], Bb[ 8]), XNOR(Ab[ 9], Bb[ 9]) )
+                         , ANDR( XNOR(Ab[10], Bb[10]), XNOR(Ab[11], Bb[11]) ) 
+                         )
+                    , AND( ANDR( XNOR(Ab[12], Bb[12]), XNOR(Ab[13], Bb[13]) )
+                         , ANDR( XNOR(Ab[14], Bb[14]), XNOR(Ab[15], Bb[15]) ) 
+               )    )    )
+
+def CMP8(A : int, B : int):
+    Ab = [ DENM( (A // 2**0) % 2 )
+         , DENM( (A // 2**1) % 2 )
+         , DENM( (A // 2**2) % 2 )
+         , DENM( (A // 2**3) % 2 )
+         , DENM( (A // 2**4) % 2 )
+         , DENM( (A // 2**5) % 2 )
+         , DENM( (A // 2**6) % 2 )
+         , DENM( (A // 2**7) % 2 )
+         ]
+    Bb = [ DENM( (B // 2**0) % 2 )
+         , DENM( (B // 2**1) % 2 )
+         , DENM( (B // 2**2) % 2 )
+         , DENM( (B // 2**3) % 2 )
+         , DENM( (B // 2**4) % 2 )
+         , DENM( (B // 2**5) % 2 )
+         , DENM( (B // 2**6) % 2 )
+         , DENM( (B // 2**7) % 2 )
+         ]
+    return ANDR( AND( ANDR( XNOR(Ab[0], Bb[0]), XNOR(Ab[1], Bb[1]) )
+                    , ANDR( XNOR(Ab[2], Bb[2]), XNOR(Ab[3], Bb[3]) ) 
+                    )
+               , AND( ANDR( XNOR(Ab[4], Bb[4]), XNOR(Ab[5], Bb[5]) )
+                    , ANDR( XNOR(Ab[6], Bb[6]), XNOR(Ab[7], Bb[7]) ) 
+                    )
+               )
+
+def CMP4(A : int, B : int):
+    Ab = [ DENM( (A // 2**0) % 2 )
+         , DENM( (A // 2**1) % 2 )
+         , DENM( (A // 2**2) % 2 )
+         , DENM( (A // 2**3) % 2 )
+         ]
+    Bb = [ DENM( (B // 2**0) % 2 )
+         , DENM( (B // 2**1) % 2 )
+         , DENM( (B // 2**2) % 2 )
+         , DENM( (B // 2**3) % 2 )
+         ]
+    return ANDR( AND( XNOR(Ab[0], Bb[0]), XNOR(Ab[1], Bb[1]) )
+               , AND( XNOR(Ab[2], Bb[2]), XNOR(Ab[3], Bb[3]) ) 
+               )
+
+def CMP2(A : int, B : int):
+    Ab = [ DENM( (A // 2**0) % 2 )
+         , DENM( (A // 2**1) % 2 )
+         ]
+    Bb = [ DENM( (B // 2**0) % 2 )
+         , DENM( (B // 2**1) % 2 )
+         ]
+    return ANDR( XNOR(Ab[0], Bb[0]), XNOR(Ab[1], Bb[1]) )
+
+#-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+# Memory manipulations
+
+def MEM_WRITE(MEM_MAT, ADDR, NEW_VAL, bitwidth=8):
+    """
+    I think I can get away with the list comprehension here:
+    
+    This would be the same if written out for each line of the matrix
+    and I don't want a 64k-line matrix in my source code
+    """
+    if   bitwidth== 2: CMPF = CMP2
+    elif bitwidth== 4: CMPF = CMP4
+    elif bitwidth== 8: CMPF = CMP8
+    elif bitwidth==16: CMPF = CMP16
+    else             : CMPF = CMP
+
+    return [ [ row[0]
+             , ( NEW_VAL * RNRM(    CMPF(ADDR, row[0] )).real 
+               + row[1]  * RNRM(NOT(CMPF(ADDR, row[0]))).real 
+               ) 
+             ]
+             for row in MEM_MAT
+           ]
+
+def MEM_READ(MEM_MAT, ADDR, bitwidth=8):
+    """
+    I think I can get away with the list comprehension here:
+    
+    This would be the same if written out for each line of the matrix
+    and I don't want a 64k-line matrix in my source code
+    """
+    if   bitwidth== 2: CMPF = CMP2
+    elif bitwidth== 4: CMPF = CMP4
+    elif bitwidth== 8: CMPF = CMP8
+    elif bitwidth==16: CMPF = CMP16
+    else             : CMPF = CMP
+
+    return sum( row[1] * RNRM(CMPF(ADDR, row[0])).real 
+                for row in MEM_MAT
+              )
+
+#-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+
 
 #-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 #  circuit
@@ -212,6 +363,22 @@ def binary_convert(bits, big_endian=False):
     
 
 if __name__=="__main__":
+    MEM_MAT = [[ 0, 0]
+              ,[ 1, 1]
+              ,[ 2, 2]
+              ,[ 3, 3]
+              ]
+    print(MEM_MAT)
+    MEM_MAT = MEM_WRITE(MEM_MAT,2,99,bitwidth=4)
+    print(MEM_MAT)
+
+    MEM_MAT = MEM_WRITE(MEM_MAT,1,99,bitwidth=4)
+    print(MEM_READ(MEM_MAT, 0))
+    print(MEM_READ(MEM_MAT, 1))
+    print(MEM_READ(MEM_MAT, 2))
+    print(MEM_READ(MEM_MAT, 3))
+
+"""    
     print "           R=OR( AND(NOT(A), B), AND(A, B) )"
     print "           M=a^48 * b^32 * t"
     print "             A|B||R|M"
@@ -313,7 +480,7 @@ if __name__=="__main__":
         print "IMGL(IMGL(a*b*t)**2 * IMGL(a*b*t)**2 * u) / (IMGL(a * IMGL(a*b) * t))**2 == t {}".format(REFINE( IMGL(IMGL(a*b*t)**2 * IMGL(a*b*t)**2 * u) / (IMGL(a * IMGL(a*b) * t))**2 ) == t )
         # print "IMGL(IMGL(a*b*t)**2 * IMGL(a*c*t)**2 * u) / (IMGL(a * IMGL(b*c) * t))**2 == t {}".format(dispU( IMGL(IMGL(a*b*t)**2 * IMGL(a*c*t)**2 * u) / (IMGL(a * IMGL(b*c) * t))**2 ))
         # print "IMGL(IMGL(a*b*t)**2 * IMGL(a*c*t)**2 * u) / (IMGL(a * IMGL(b*c) * t)**2 * t) == f {}".format( RIML(IMGL(a*b*t)**2 * IMGL(a*c*t)**2 * u) / REFINE(IMGL(a * IMGL(b*c) * t)**2 * t) == f )
-
+"""
 """
 
 OR( AND(NOT(A), B), AND(A, B) )
