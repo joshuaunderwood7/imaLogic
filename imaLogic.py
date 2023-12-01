@@ -206,9 +206,269 @@ def MEM_READ(MEM_MAT, ADDR, bitwidth=8):
                 for row in MEM_MAT
               )
 
+def MEM_REFINE(MEM):
+    return [[a,int(v)] for a,v in MEM]
+    
 #-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+# Brainf*ck python adapters
 
+from functools import partial
+def ID(x): 
+    return x
+    
+def BF_MULTIPLY(LAMBDA, X):
+    if X == 0:
+        return []
+    else:
+        return LAMBDA() * X
+        
+class _Getch:
+    """Gets a single character from standard input.  Does not echo to the screen."""
+    def __init__(self):
+        try:
+            self.impl = _GetchWindows()
+        except ImportError:
+            self.impl = _GetchUnix()
+
+    def __call__(self): return self.impl()
+
+
+class _GetchUnix:
+    def __init__(self):
+        import tty, sys
+
+    def __call__(self):
+        import sys, tty, termios
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            tty.setraw(sys.stdin.fileno())
+            ch = sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        return ch
+
+
+class _GetchWindows:
+    def __init__(self):
+        import msvcrt
+
+    def __call__(self):
+        import msvcrt
+        return msvcrt.getch()
+
+getch = _Getch()
+    
+#-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+# Brainf*ck definition and operations
+
+PR = ord(">")
+PL = ord("<")
+PI = ord("+")
+PD = ord("-")
+LB = ord("[")
+RB = ord("]")
+OP = ord(".")
+IP = ord(",")
+BF_CMDS     = [PR, PL, PI, PD, LB, RB]
+EXTENDED_BF = [PR, PL, PI, PD, LB, RB, OP, IP]
+
+# Assign memory limitation
+# While unbounded memory is a feature, practical examples
+# would require programs to exist in a specified size of 
+# memory.  Here's I'm choosing 8-bits to store the program
+# and the output
+ADDRESS_WIDTH = 8
+MEM_SIZE = 2**ADDRESS_WIDTH
+
+# Define the program
+# I'd love to start with hello world, but I found a smaller
+# program on esolangs.org that does not require I/O (which 
+# is not required to be turing complete).  This program uses
+# all six Brainf*ck commands to move a value "two places to 
+# the right" in memory
+PROGRAM = "[>>[-]<<[->>+<<]]"
+PROGRAM_LEN = len(PROGRAM)
+
+# Reserve addresses for Brainf*ck operation:
+# The Program pointer -> where are we in the program
+PROG_P  = 0
+# The stack counter's pointer -> How deep are we nested in "[]" blocks
+STACK_P = 1
+# The end of the Brainf*ck program.  (start of the BF memory) for convinence
+BF_HALT = 2
+# The Brainf*ck pointer, allowes program manipulations of memory
+BF_P    = 3
+
+BF_MEM = ([ [ 0 , 4 ]  # The program counter (Program starts at address 3)
+          , [ 1 , 0 ]  # The stack counter used to count nested contitionals' parens 
+          , [ 2 , 4 + PROGRAM_LEN]  # This is the Brainf*ck HALT address
+          , [ 3 , 4 + PROGRAM_LEN]  # This is the Brainf*ck "pointer"
+          ]
+          + [ [ii, ord(c)] for ii,c in enumerate(PROGRAM, 4)] # Load the Program
+          + [ [ii, 0] for ii in range(4+PROGRAM_LEN, MEM_SIZE)] # Fill the rest of the memory with zeros
+         )
+BF_MEM = MEM_WRITE(BF_MEM, MEM_READ(BF_MEM, BF_P), 3) # Put a value in memory (at *BF_P = 3) to "move to the right"
+
+def LOAD_PROGRAM(prg_str):
+    global PROGRAM
+    global PROGRAM_LEN
+    global BF_MEM
+    PROGRAM = prg_str
+    PROGRAM_LEN = len(PROGRAM)
+    BF_MEM = ([ [ 0 , 4 ]  # The program counter (Program starts at address 3)
+              , [ 1 , 0 ]  # The stack counter used to count nested contitionals' parens 
+              , [ 2 , 4 + PROGRAM_LEN]  # This is the Brainf*ck HALT address
+              , [ 3 , 4 + PROGRAM_LEN]  # This is the Brainf*ck "pointer"
+              ]
+              + [ [ii, ord(c)] for ii,c in enumerate(PROGRAM, 4)] # Load the Program
+              + [ [ii, 0] for ii in range(4+PROGRAM_LEN, MEM_SIZE)] # Fill the rest of the memory with zeros
+             )
+
+def PTR_RIGHT(MEM):
+    return MEM_WRITE(MEM, BF_P, MEM_READ(MEM, BF_P) + 1)
+
+def PTR_LEFT(MEM):
+    return MEM_WRITE(MEM, BF_P, MEM_READ(MEM, BF_P) - 1)
+
+def PTR_INC(MEM):
+    return MEM_WRITE(MEM, MEM_READ(MEM, BF_P),  MEM_READ(MEM, MEM_READ(MEM, BF_P)) + 1)
+
+def PTR_DEC(MEM):
+    return MEM_WRITE(MEM, MEM_READ(MEM, BF_P),  MEM_READ(MEM, MEM_READ(MEM, BF_P)) - 1)
+
+def SCAN_LEFT(MEM):
+    MEM = MEM_WRITE( MEM, STACK_P
+                   , int( ( MEM_READ(MEM, STACK_P)                                        ) 
+                        - ( 1 * RNRM(CMP8(MEM_READ(MEM,  MEM_READ(MEM,PROG_P)), LB)).real ) 
+                        + ( 1 * RNRM(CMP8(MEM_READ(MEM,  MEM_READ(MEM,PROG_P)), RB)).real ) 
+                        )
+                   )
+    # Go one past the matching left bracket in anticipation of the PC++
+    MEM = MEM_WRITE(MEM, PROG_P,  MEM_READ(MEM, PROG_P) - 1)
+    
+    # While this is most correct, the python interpreter won't short-circut 
+    # a multiply-by-zero, so I added a BF_MULTIPLY function to do just that.
+    # A more sophisticated multiplication system or a human could make this 
+    # short circut without the if-else block in BF_MULTIPLY
+    #return ( MEM * RNRM(CMP8(MEM_READ(MEM,  STACK_P), 0)).real ) + ( SCAN_LEFT(MEM) * RNRM(NOT(CMP8(MEM_READ(MEM,  STACK_P), 0))).real )
+    return ( (BF_MULTIPLY(partial(       ID,MEM), int(RNRM(    CMP8(MEM_READ(MEM,  STACK_P), 0) ).real)) )  
+           + (BF_MULTIPLY(partial(SCAN_LEFT,MEM), int(RNRM(NOT(CMP8(MEM_READ(MEM,  STACK_P), 0))).real)) )
+           )
+# I made a choice to always scan on a right bracket, the conditional is only on LEFT_BRACKET
+RIGHT_BRACKET = SCAN_LEFT
+
+
+def SCAN_RIGHT(MEM):
+    MEM = MEM_WRITE( MEM, STACK_P
+                   , int( ( MEM_READ(MEM, STACK_P)                                        ) 
+                        + ( 1 * RNRM(CMP8(MEM_READ(MEM,  MEM_READ(MEM,PROG_P)), LB)).real ) 
+                        - ( 1 * RNRM(CMP8(MEM_READ(MEM,  MEM_READ(MEM,PROG_P)), RB)).real ) 
+                        )
+                   )
+    # Stop on the matching right bracket in anticipation of the PC++
+    MEM = MEM_WRITE(MEM, PROG_P,  MEM_READ(MEM, PROG_P) + int(RNRM(NOT(CMP8(MEM_READ(MEM,  STACK_P), 0))).real))
+    
+    # While this is most correct, the python interpreter won't short-circut 
+    # a multiply-by-zero, so I added a BF_MULTIPLY function to do just that.
+    # A more sophisticated multiplication system or a human could make this 
+    # short circut without the if-else block in BF_MULTIPLY
+    #return ( MEM * RNRM(CMP8(MEM_READ(MEM,  STACK_P), 0)).real ) + ( SCAN_RIGHT(MEM) * RNRM(NOT(CMP8(MEM_READ(MEM,  STACK_P), 0))).real )  
+    return ( (BF_MULTIPLY(partial(        ID,MEM), int(RNRM(    CMP8(MEM_READ(MEM,  STACK_P), 0) ).real)) )  
+           + (BF_MULTIPLY(partial(SCAN_RIGHT,MEM), int(RNRM(NOT(CMP8(MEM_READ(MEM,  STACK_P), 0))).real)) )
+           )
+           
+           
+def LEFT_BRACKET(MEM):
+    # If the value at *BF_P != 0 then leave everything alone in anticipation of PC++
+    ### TODO: CHANGE CMP16 to a bigger CMP if needed ###
+    return ( (BF_MULTIPLY(partial(        ID,MEM), int(RNRM(NOT(CMP16(MEM_READ(MEM,  MEM_READ(MEM,  BF_P)), 0))).real)) )
+           + (BF_MULTIPLY(partial(SCAN_RIGHT,MEM), int(RNRM(    CMP16(MEM_READ(MEM,  MEM_READ(MEM,  BF_P)), 0) ).real)) )
+           )
+
+def OUTPUT(MEM):
+    print(f"{chr(int(MEM_READ(MEM,  MEM_READ(MEM,  BF_P))))}", end='')
+    return MEM
+
+def INPUT(MEM):
+    MEM = MEM_WRITE(MEM, MEM_READ(MEM,  BF_P), ord(getch()) )
+    return MEM
+
+def STEP(MEM):
+    MEM =  ( BF_MULTIPLY(  partial(    PTR_RIGHT,MEM), int(RNRM( CMP8(MEM_READ(MEM, MEM_READ(MEM, PROG_P)), PR) ).real)  )
+           + BF_MULTIPLY(  partial(     PTR_LEFT,MEM), int(RNRM( CMP8(MEM_READ(MEM, MEM_READ(MEM, PROG_P)), PL) ).real)  )
+           + BF_MULTIPLY(  partial(      PTR_INC,MEM), int(RNRM( CMP8(MEM_READ(MEM, MEM_READ(MEM, PROG_P)), PI) ).real)  )
+           + BF_MULTIPLY(  partial(      PTR_DEC,MEM), int(RNRM( CMP8(MEM_READ(MEM, MEM_READ(MEM, PROG_P)), PD) ).real)  )
+           + BF_MULTIPLY(  partial( LEFT_BRACKET,MEM), int(RNRM( CMP8(MEM_READ(MEM, MEM_READ(MEM, PROG_P)), LB) ).real)  )
+           + BF_MULTIPLY(  partial(RIGHT_BRACKET,MEM), int(RNRM( CMP8(MEM_READ(MEM, MEM_READ(MEM, PROG_P)), RB) ).real)  )
+           + BF_MULTIPLY(  partial(       OUTPUT,MEM), int(RNRM( CMP8(MEM_READ(MEM, MEM_READ(MEM, PROG_P)), OP) ).real)  )
+           + BF_MULTIPLY(  partial(        INPUT,MEM), int(RNRM( CMP8(MEM_READ(MEM, MEM_READ(MEM, PROG_P)), IP) ).real)  )
+           )
+    MEM = MEM_WRITE(MEM, PROG_P, MEM_READ(MEM, PROG_P) + 1)
+    return RUN(MEM)
+            
+
+def RUN(MEM):
+    return ( BF_MULTIPLY(  partial(  ID,MEM), int(RNRM(    CMP16(MEM_READ(MEM, PROG_P), MEM_READ(MEM, BF_HALT)) ).real)  )
+           + BF_MULTIPLY(  partial(STEP,MEM), int(RNRM(NOT(CMP16(MEM_READ(MEM, PROG_P), MEM_READ(MEM, BF_HALT)))).real)  )
+           )
+
+   
+#-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+# These are **ALMOST** legit.  I'm using a control block 
+# to deal with python's recursion limit; If python had 
+# Tail-call optimization, then this would be unneeded
+# Again, if done by hand, these optimizations would be implicit
+
+def STEP_TCO(MEM):
+    # from ipdb import set_trace; set_trace()
+    MEM =  ( BF_MULTIPLY(  partial(    PTR_RIGHT,MEM), int(RNRM( CMP8(MEM_READ(MEM, MEM_READ(MEM, PROG_P)), PR) ).real)  )
+           + BF_MULTIPLY(  partial(     PTR_LEFT,MEM), int(RNRM( CMP8(MEM_READ(MEM, MEM_READ(MEM, PROG_P)), PL) ).real)  )
+           + BF_MULTIPLY(  partial(      PTR_INC,MEM), int(RNRM( CMP8(MEM_READ(MEM, MEM_READ(MEM, PROG_P)), PI) ).real)  )
+           + BF_MULTIPLY(  partial(      PTR_DEC,MEM), int(RNRM( CMP8(MEM_READ(MEM, MEM_READ(MEM, PROG_P)), PD) ).real)  )
+           + BF_MULTIPLY(  partial( LEFT_BRACKET,MEM), int(RNRM( CMP8(MEM_READ(MEM, MEM_READ(MEM, PROG_P)), LB) ).real)  )
+           + BF_MULTIPLY(  partial(RIGHT_BRACKET,MEM), int(RNRM( CMP8(MEM_READ(MEM, MEM_READ(MEM, PROG_P)), RB) ).real)  )
+           + BF_MULTIPLY(  partial(       OUTPUT,MEM), int(RNRM( CMP8(MEM_READ(MEM, MEM_READ(MEM, PROG_P)), OP) ).real)  )
+           + BF_MULTIPLY(  partial(        INPUT,MEM), int(RNRM( CMP8(MEM_READ(MEM, MEM_READ(MEM, PROG_P)), IP) ).real)  )
+           )
+    MEM = MEM_WRITE(MEM, PROG_P, MEM_READ(MEM, PROG_P) + 1)
+    # bf_print(MEM)
+    return MEM
+
+def RUN_TCO(MEM): 
+    """
+    While I could increase the python recursion depth, this while-block 
+    works around it.  see RUN function above for pure execution
+    """
+    # bf_print(MEM)
+    while int(RNRM(NOT(CMP16(MEM_READ(MEM, PROG_P), MEM_READ(MEM, BF_HALT)))).real):
+        MEM = ( BF_MULTIPLY(  partial(      ID,MEM), int(RNRM(    CMP16(MEM_READ(MEM, PROG_P), MEM_READ(MEM, BF_HALT)) ).real)  )
+              + BF_MULTIPLY(  partial(STEP_TCO,MEM), int(RNRM(NOT(CMP16(MEM_READ(MEM, PROG_P), MEM_READ(MEM, BF_HALT)))).real)  )
+              )
+    # bf_print(MEM)
+    return MEM
+     
+#-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+# Machine state displays
+
+from pprint import pprint
+def bf_print(MEM):
+    print("===")
+    print(f"  PC: {MEM[0][1]}")
+    print(f"  SC: {MEM[1][1]}")
+    print(f"HALT: {MEM[2][1]}")
+    print(f" BFP: {MEM[3][1]}")
+    print("---")
+    print(f"Program : {''.join( chr(int(x[1])) for x in MEM[4:int(MEM[2][1])])} ")
+    print(f"address : {''.join(f'{x[0]:2}'[-2] for x in MEM[4:int(MEM[2][1])])} ")
+    print(f"          {''.join(f'{x[0]:2}'[-1] for x in MEM[4:int(MEM[2][1])])} ")
+    print("---")
+    pprint(MEM[int(MEM[2][1]):], compact=True)
+    print("===")
+
+#-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 #  circuit
@@ -363,6 +623,16 @@ def binary_convert(bits, big_endian=False):
     
 
 if __name__=="__main__":
+
+    # bf_print(MEM_REFINE(BF_MEM)) # Display starting memory
+    # BF_MEM = RUN(BF_MEM)
+    # bf_print(MEM_REFINE(BF_MEM)) # Display the ending memory
+    
+    print("The Moment of truth: Hello program.")
+    LOAD_PROGRAM("++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.")
+    RUN_TCO(BF_MEM)
+
+"""    
     MEM_MAT = [[ 0, 0]
               ,[ 1, 1]
               ,[ 2, 2]
@@ -378,7 +648,7 @@ if __name__=="__main__":
     print(MEM_READ(MEM_MAT, 2))
     print(MEM_READ(MEM_MAT, 3))
 
-"""    
+    
     print "           R=OR( AND(NOT(A), B), AND(A, B) )"
     print "           M=a^48 * b^32 * t"
     print "             A|B||R|M"
