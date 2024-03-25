@@ -48,6 +48,7 @@ def NOR(X,Y):   return NOT(OR(X,Y))
     
 def NAND(X,Y):  return IMGL(X * Y * t)
 def AND(X, Y):  return NOT(NAND(X,Y))
+def ANDR(X, Y): return REFINE(AND(X,Y))
                                                                                                                                                                             
 def XNOR(X,Y):  return IMGL(X * Y * u)
 def XOR(X,Y):   return NOT(XNOR(X,Y))
