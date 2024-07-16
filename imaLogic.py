@@ -2,6 +2,27 @@ from __future__ import division
 import math
 import cmath
 
+#======================================================
+#=       Consider these alternative definitions       =
+#======================================================
+#
+#f = -1 + 0j
+#t =  1 + 0j
+#i =  0 + 1j
+#
+#def get_theta(X):
+#    r, theta = cmath.polar(X)
+#    return theta
+#
+#def NOT(A):
+#    return cmath.exp( i * get_theta(A) * cmath.pi )
+#
+#def AND(A,B):
+#    return ( cmath.exp( i * ((get_theta(A) + get_theta(B))/2) ) * -2 * ((get_theta(A) * get_theta(B)) ) - 1
+#
+#======================================================
+
+
 #-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 #  Definitions
 
